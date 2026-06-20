@@ -1,0 +1,48 @@
+{
+  "name": "openclaw-musicfree-bridge",
+  "version": "0.1.0",
+  "description": "OpenClaw tool plugin that runs user-installed MusicFree-compatible plugins.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "files": [
+    "dist",
+    "skills",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "verify": "npm run build && npm test && npm run plugin:build:check && npm run plugin:validate",
+    "plugin:build": "openclaw plugins build --root . --entry dist/index.js",
+    "plugin:build:check": "openclaw plugins build --check --root . --entry dist/index.js",
+    "plugin:validate": "openclaw plugins validate --root . --entry dist/index.js",
+    "plugin:inspect": "openclaw plugins inspect musicfree-bridge --runtime --json"
+  },
+  "dependencies": {
+    "axios": "0.27.2",
+    "big-integer": "1.6.51",
+    "cheerio": "1.0.0-rc.12",
+    "crypto-js": "4.2.0",
+    "dayjs": "1.11.4",
+    "he": "1.2.0",
+    "qs": "6.11.0",
+    "typebox": "^1.0.55",
+    "webdav": "5.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "openclaw": ">=2026.5.17",
+    "typescript": "^5.5.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.5.17",
+      "minGatewayVersion": ">=2026.5.17"
+    }
+  }
+}

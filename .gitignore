@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+
+# Local runtime data if configured inside the workspace.
+.openclaw/
+musicfree-data/
+downloads/

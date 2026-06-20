@@ -1,0 +1,69 @@
+{
+  "id": "musicfree-bridge",
+  "name": "MusicFree Bridge",
+  "description": "Runs user-installed MusicFree-compatible plugins from OpenClaw.",
+  "activation": {
+    "onStartup": true
+  },
+  "skills": [
+    "skills"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "dataDir": {
+        "type": "string",
+        "description": "Directory for plugin files and metadata."
+      },
+      "downloadDir": {
+        "type": "string",
+        "description": "Default directory for downloaded audio."
+      },
+      "defaultQuality": {
+        "anyOf": [
+          {
+            "type": "string",
+            "const": "low"
+          },
+          {
+            "type": "string",
+            "const": "standard"
+          },
+          {
+            "type": "string",
+            "const": "high"
+          },
+          {
+            "type": "string",
+            "const": "super"
+          }
+        ]
+      },
+      "allowRemotePluginInstall": {
+        "type": "boolean"
+      },
+      "runtimeTimeoutMs": {
+        "type": "number"
+      },
+      "downloadTimeoutMs": {
+        "type": "number"
+      }
+    }
+  },
+  "version": "0.1.0",
+  "contracts": {
+    "tools": [
+      "musicfree_subscribe",
+      "musicfree_refresh_subscriptions",
+      "musicfree_install_plugin",
+      "musicfree_list_plugins",
+      "musicfree_set_plugin_vars",
+      "musicfree_set_plugin_enabled",
+      "musicfree_remove_plugin",
+      "musicfree_search",
+      "musicfree_resolve",
+      "musicfree_download",
+      "musicfree_lyrics"
+    ]
+  }
+}
