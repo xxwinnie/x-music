@@ -12,10 +12,11 @@ responsible for selecting and configuring their own plugins and sources.
 
 - Install a MusicFree plugin from a local `.js` file or remote URL.
 - Install plugins from a MusicFree-style `plugins.json` subscription.
-- Refresh subscriptions.
+- List, refresh, and remove subscriptions.
 - List, enable, disable, remove, and configure installed plugins.
 - Call `search`, `getMediaSource`, and `getLyric`.
 - Download resolved audio URLs with plugin-provided headers/user-agent.
+- Avoid overwriting existing downloads by adding a numeric suffix.
 
 ## Package layout
 
@@ -50,6 +51,8 @@ tests, OpenClaw metadata check, and OpenClaw plugin validation.
 ```text
 musicfree_subscribe
 musicfree_refresh_subscriptions
+musicfree_list_subscriptions
+musicfree_remove_subscription
 musicfree_install_plugin
 musicfree_list_plugins
 musicfree_set_plugin_vars
@@ -103,7 +106,10 @@ the candidate and resolved media metadata.
           dataDir: "~/.openclaw/musicfree",
           downloadDir: "~/Music/OpenClaw",
           defaultQuality: "standard",
-          allowRemotePluginInstall: true
+          allowRemotePluginInstall: true,
+          pluginFetchTimeoutMs: 30000,
+          runtimeTimeoutMs: 30000,
+          downloadTimeoutMs: 120000
         }
       }
     }

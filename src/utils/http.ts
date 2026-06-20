@@ -1,9 +1,45 @@
-export async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} while fetching ${url}`);
+export interface FetchTextOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+export async function fetchText(url: string, options: FetchTextOptions = {}): Promise<string> {
+  const { signal, timeoutMs } = options;
+  const controller = new AbortController();
+  let timedOut = false;
+  let timeout: NodeJS.Timeout | undefined;
+  const abortRelay = () => controller.abort(signal?.reason);
+
+  if (timeoutMs) {
+    timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
   }
-  return response.text();
+
+  if (signal?.aborted) {
+    abortRelay();
+  } else {
+    signal?.addEventListener("abort", abortRelay, { once: true });
+  }
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} while fetching ${url}`);
+    }
+    return await response.text();
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(`HTTP fetch timed out after ${timeoutMs}ms: ${url}`);
+    }
+    throw error;
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    signal?.removeEventListener("abort", abortRelay);
+  }
 }
 
 export function isHttpUrl(input: string): boolean {

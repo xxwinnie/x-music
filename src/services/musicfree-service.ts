@@ -35,7 +35,10 @@ export class MusicFreeService {
     await this.store.ensureReady();
     this.assertRemoteInstallAllowed(url);
 
-    const raw = await fetchText(url, signal);
+    const raw = await fetchText(url, {
+      signal,
+      timeoutMs: this.config.pluginFetchTimeoutMs
+    });
     const subscription = JSON.parse(raw) as MusicFreeSubscriptionFile;
     if (!subscription || !Array.isArray(subscription.plugins)) {
       throw new Error("Invalid MusicFree subscription: expected plugins array");
@@ -85,6 +88,16 @@ export class MusicFreeService {
     }
 
     return { count: subscriptions.length, refreshed, errors };
+  }
+
+  async listSubscriptions() {
+    await this.store.ensureReady();
+    return this.store.listSubscriptions();
+  }
+
+  async removeSubscription(subscriptionIdOrUrl: string) {
+    await this.store.ensureReady();
+    return this.store.removeSubscription(subscriptionIdOrUrl);
   }
 
   async installPlugin(options: {
@@ -262,28 +275,36 @@ export class MusicFreeService {
     const targetDir = this.resolveTargetDir(options.targetDir);
     await ensureDir(targetDir);
 
-    const response = await this.fetchWithTimeout(source, options.signal);
+    const downloadRequest = await this.fetchWithTimeout(source, options.signal);
+    const response = downloadRequest.response;
     const ext =
       extensionFromContentType(response.headers.get("content-type")) ??
       extensionFromUrl(source.url) ??
       "mp3";
     const fileName = makeAudioFileName(candidate.item, ext);
-    const finalPath = assertPathInside(targetDir, path.join(targetDir, fileName));
-    const tmpPath = `${finalPath}.tmp-${Date.now()}`;
+    const finalPath = await this.resolveAvailableDownloadPath(targetDir, fileName);
 
-    if (!response.body) {
-      throw new Error("Download response did not include a body");
-    }
+    let outputOpened = false;
 
     try {
+      if (!response.body) {
+        throw new Error("Download response did not include a body");
+      }
+      const output = createWriteStream(finalPath, { flags: "wx" });
+      output.once("open", () => {
+        outputOpened = true;
+      });
       await pipeline(
         Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
-        createWriteStream(tmpPath)
+        output
       );
-      await fs.rename(tmpPath, finalPath);
     } catch (error) {
-      await fs.rm(tmpPath, { force: true });
+      if (outputOpened) {
+        await fs.rm(finalPath, { force: true });
+      }
       throw error;
+    } finally {
+      downloadRequest.cleanup();
     }
 
     let lyricPath: string | undefined;
@@ -386,7 +407,10 @@ export class MusicFreeService {
   private async readPluginSource(source: string, signal?: AbortSignal): Promise<string> {
     if (isHttpUrl(source)) {
       this.assertRemoteInstallAllowed(source);
-      return fetchText(source, signal);
+      return fetchText(source, {
+        signal,
+        timeoutMs: this.config.pluginFetchTimeoutMs
+      });
     }
     return fs.readFile(source, "utf8");
   }
@@ -421,7 +445,7 @@ export class MusicFreeService {
   private async fetchWithTimeout(
     source: MusicFreeMediaSourceResult,
     signal?: AbortSignal
-  ): Promise<Response> {
+  ): Promise<{ response: Response; cleanup: () => void }> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.downloadTimeoutMs);
     const abortRelay = () => controller.abort();
@@ -435,12 +459,51 @@ export class MusicFreeService {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status} while downloading media`);
       }
-      return response;
-    } finally {
+      return {
+        response,
+        cleanup: () => {
+          clearTimeout(timeout);
+          signal?.removeEventListener("abort", abortRelay);
+        }
+      };
+    } catch (error) {
       clearTimeout(timeout);
       signal?.removeEventListener("abort", abortRelay);
+      throw error;
     }
   }
+
+  private async resolveAvailableDownloadPath(targetDir: string, fileName: string): Promise<string> {
+    const parsed = path.parse(fileName);
+    for (let index = 0; index < 1_000; index += 1) {
+      const suffix = index === 0 ? "" : ` (${index + 1})`;
+      const candidate = assertPathInside(
+        targetDir,
+        path.join(targetDir, `${parsed.name}${suffix}${parsed.ext}`)
+      );
+      if (!(await pathExists(candidate))) {
+        return candidate;
+      }
+    }
+
+    throw new Error(`Could not find an available file name for ${fileName}`);
+  }
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return typeof error === "object" && error !== null && "code" in error;
 }
 
 function toCandidateSummary(record: CandidateRecord): Record<string, unknown> {

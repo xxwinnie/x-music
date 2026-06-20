@@ -8,6 +8,7 @@ export interface MusicFreeBridgeConfig {
   downloadDir?: string;
   defaultQuality?: MusicFreeQuality;
   allowRemotePluginInstall?: boolean;
+  pluginFetchTimeoutMs?: number;
   runtimeTimeoutMs?: number;
   downloadTimeoutMs?: number;
 }
@@ -17,6 +18,7 @@ export interface ResolvedBridgeConfig {
   downloadDir: string;
   defaultQuality: MusicFreeQuality;
   allowRemotePluginInstall: boolean;
+  pluginFetchTimeoutMs: number;
   runtimeTimeoutMs: number;
   downloadTimeoutMs: number;
 }
@@ -27,6 +29,7 @@ export function resolveBridgeConfig(config: MusicFreeBridgeConfig = {}): Resolve
     downloadDir: expandHome(config.downloadDir ?? "~/Music/OpenClaw"),
     defaultQuality: config.defaultQuality ?? "standard",
     allowRemotePluginInstall: config.allowRemotePluginInstall ?? false,
+    pluginFetchTimeoutMs: config.pluginFetchTimeoutMs ?? 30_000,
     runtimeTimeoutMs: config.runtimeTimeoutMs ?? 30_000,
     downloadTimeoutMs: config.downloadTimeoutMs ?? 120_000
   };

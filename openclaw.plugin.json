@@ -42,6 +42,9 @@
       "allowRemotePluginInstall": {
         "type": "boolean"
       },
+      "pluginFetchTimeoutMs": {
+        "type": "number"
+      },
       "runtimeTimeoutMs": {
         "type": "number"
       },
@@ -55,6 +58,8 @@
     "tools": [
       "musicfree_subscribe",
       "musicfree_refresh_subscriptions",
+      "musicfree_list_subscriptions",
+      "musicfree_remove_subscription",
       "musicfree_install_plugin",
       "musicfree_list_plugins",
       "musicfree_set_plugin_vars",

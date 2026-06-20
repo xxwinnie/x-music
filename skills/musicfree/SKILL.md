@@ -12,8 +12,10 @@ Workflow:
 
 1. Use `musicfree_list_plugins` to inspect installed plugins when the request
    depends on available sources.
-2. Use `musicfree_subscribe`, `musicfree_refresh_subscriptions`, or
-   `musicfree_install_plugin` only when the user asks to add or update plugins.
+2. Use `musicfree_subscribe`, `musicfree_refresh_subscriptions`,
+   `musicfree_list_subscriptions`, `musicfree_remove_subscription`, or
+   `musicfree_install_plugin` only when the user asks to add, inspect, remove,
+   or update plugins and subscriptions.
 3. Use `musicfree_set_plugin_vars` when a plugin declares required
    `userVariables`.
 4. Use `musicfree_search` to find candidates. Do not invent plugin names or

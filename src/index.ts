@@ -27,6 +27,7 @@ export default defineToolPlugin({
     downloadDir: Type.Optional(Type.String({ description: "Default directory for downloaded audio." })),
     defaultQuality: Type.Optional(Quality),
     allowRemotePluginInstall: Type.Optional(Type.Boolean()),
+    pluginFetchTimeoutMs: Type.Optional(Type.Number()),
     runtimeTimeoutMs: Type.Optional(Type.Number()),
     downloadTimeoutMs: Type.Optional(Type.Number())
   }),
@@ -54,6 +55,28 @@ export default defineToolPlugin({
         return new MusicFreeService(config as MusicFreeBridgeConfig).refreshSubscriptions(
           force,
           context.signal
+        );
+      }
+    }),
+    tool({
+      name: "musicfree_list_subscriptions",
+      label: "MusicFree List Subscriptions",
+      description: "List previously added MusicFree-compatible plugins.json subscriptions.",
+      parameters: Type.Object({}),
+      async execute(_params, config) {
+        return new MusicFreeService(config as MusicFreeBridgeConfig).listSubscriptions();
+      }
+    }),
+    tool({
+      name: "musicfree_remove_subscription",
+      label: "MusicFree Remove Subscription",
+      description: "Remove a MusicFree-compatible plugins.json subscription from the local registry.",
+      parameters: Type.Object({
+        subscriptionIdOrUrl: Type.String({ description: "Subscription id or URL." })
+      }),
+      async execute({ subscriptionIdOrUrl }, config) {
+        return new MusicFreeService(config as MusicFreeBridgeConfig).removeSubscription(
+          subscriptionIdOrUrl
         );
       }
     }),

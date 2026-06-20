@@ -17,8 +17,7 @@
     "verify": "npm run build && npm test && npm run plugin:build:check && npm run plugin:validate",
     "plugin:build": "openclaw plugins build --root . --entry dist/index.js",
     "plugin:build:check": "openclaw plugins build --check --root . --entry dist/index.js",
-    "plugin:validate": "openclaw plugins validate --root . --entry dist/index.js",
-    "plugin:inspect": "openclaw plugins inspect musicfree-bridge --runtime --json"
+    "plugin:validate": "openclaw plugins validate --root . --entry dist/index.js"
   },
   "dependencies": {
     "axios": "0.27.2",

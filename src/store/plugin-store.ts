@@ -133,10 +133,30 @@ export class MusicFreeStore {
 
     if (deleteFiles) {
       const pluginDir = assertPathInside(this.pluginsDir, path.dirname(plugin.filePath));
+      if (path.resolve(pluginDir) === path.resolve(this.pluginsDir)) {
+        throw new Error(`Refusing to delete plugins root for plugin ${plugin.id}`);
+      }
       await fs.rm(pluginDir, { recursive: true, force: true });
     }
 
     return plugin;
+  }
+
+  async removeSubscription(subscriptionIdOrUrl: string): Promise<MusicFreeSubscriptionRecord> {
+    const registry = await this.readRegistry();
+    const subscription = registry.subscriptions.find(
+      (entry) => entry.id === subscriptionIdOrUrl || entry.url === subscriptionIdOrUrl
+    );
+    if (!subscription) {
+      throw new Error(`MusicFree subscription not found: ${subscriptionIdOrUrl}`);
+    }
+
+    await this.writeRegistry({
+      ...registry,
+      subscriptions: registry.subscriptions.filter((entry) => entry.id !== subscription.id)
+    });
+
+    return subscription;
   }
 
   async upsertSubscription(record: MusicFreeSubscriptionRecord): Promise<void> {

@@ -52,6 +52,13 @@ test("installs a local MusicFree plugin and downloads a resolved candidate", asy
   assert.equal(sidecar.candidate.item.title, "Needle Song");
   assert.equal(server.requests[0].headers["x-musicfree-test"], "yes");
   assert.equal(server.requests[0].headers["user-agent"], "OpenClawMusicFreeBridgeTest/1.0");
+
+  const secondDownload = await service.download({
+    resolvedId: resolved.resolvedId
+  });
+  assert.match(secondDownload.path, /Mock Artist - Needle Song \(2\)\.mp3$/);
+  assert.equal(await readFile(download.path, "utf8"), "mock audio bytes");
+  assert.equal(await readFile(secondDownload.path, "utf8"), "mock audio bytes");
 });
 
 test("installs from a MusicFree subscription and honors enabled state", async (t) => {
@@ -67,6 +74,9 @@ test("installs from a MusicFree subscription and honors enabled state", async (t
   const result = await service.subscribe(`${server.url}/plugins.json`);
   assert.equal(result.errors.length, 0);
   assert.equal(result.installed.length, 1);
+  const subscriptions = await service.listSubscriptions();
+  assert.equal(subscriptions.length, 1);
+  assert.equal(subscriptions[0].desc, "Mock subscription");
 
   const [plugin] = await service.listPlugins();
   await service.setPluginEnabled(plugin.id, false);
@@ -81,6 +91,26 @@ test("installs from a MusicFree subscription and honors enabled state", async (t
   const refreshed = await service.refreshSubscriptions(true);
   assert.equal(refreshed.count, 1);
   assert.equal(refreshed.errors.length, 0);
+
+  const removedSubscription = await service.removeSubscription(subscriptions[0].id);
+  assert.equal(removedSubscription.url, subscriptions[0].url);
+  assert.equal((await service.listSubscriptions()).length, 0);
+});
+
+test("times out remote subscription fetches", async (t) => {
+  const workspace = await createWorkspace(t);
+  const server = await createHangingServer(t);
+  const service = new MusicFreeService({
+    dataDir: workspace.dataDir,
+    downloadDir: workspace.downloadDir,
+    allowRemotePluginInstall: true,
+    pluginFetchTimeoutMs: 30
+  });
+
+  await assert.rejects(
+    service.subscribe(`${server.url}/plugins.json`),
+    /HTTP fetch timed out after 30ms/
+  );
 });
 
 test("removes plugins from the registry and deletes stored files", async (t) => {
@@ -172,6 +202,18 @@ async function createSubscriptionServer(t, pluginCode) {
 
     response.writeHead(404);
     response.end("not found");
+  });
+
+  return listen(t, server, requests);
+}
+
+async function createHangingServer(t) {
+  const requests = [];
+  const server = createServer((request) => {
+    requests.push({
+      url: request.url,
+      headers: request.headers
+    });
   });
 
   return listen(t, server, requests);
